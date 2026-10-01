@@ -1,0 +1,6 @@
+{
+  "name": "مهمة ∞ - رحلة حب تفاعلية",
+  "description": "لعبة قصصية رومانسية تفاعلية تحكي قصة أحمد وإسراء في رحلة خاصة مليئة بالمشاعر والمفاجآت",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

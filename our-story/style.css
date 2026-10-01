@@ -1,0 +1,1408 @@
+/* ==========================================================================
+   مهمة ∞ - الفصل الأول: الخطوبة
+   Style Architecture (Mobile-First Canvas 2D Platformer)
+   ========================================================================== */
+
+:root {
+  --bg: #0B0B0D;
+  --bg-hud: rgba(14, 14, 18, 0.88);
+  --bg-card: rgba(20, 20, 26, 0.95);
+  --text: #F5F1EA;
+  --text-muted: #A39E93;
+  --gold: #C9A86A;
+  --gold-light: #E7D5B0;
+  --gold-dark: #8E7342;
+  --gold-glow: rgba(201, 168, 106, 0.4);
+  --red-heart: #E84A64;
+  --esraa-pink: #FFA6B5;
+  --white: #FFFFFF;
+  --border-subtle: rgba(201, 168, 106, 0.22);
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Cairo", "Noto Sans Arabic", Tahoma, sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-family);
+  font-size: 16px;
+  direction: rtl;
+  text-align: right;
+  -webkit-font-smoothing: antialiased;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+.game-body {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   Top HUD
+   ========================================================================== */
+
+.game-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(56px + var(--safe-top));
+  padding-top: var(--safe-top);
+  padding-left: 14px;
+  padding-right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-hud);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+  z-index: 30;
+}
+
+.hud-left, .hud-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+}
+
+.mission-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.brand-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.chapter-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  background: rgba(201, 168, 106, 0.15);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.current-level-name {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.infinity-gold {
+  color: var(--gold);
+  text-shadow: 0 0 10px var(--gold-glow);
+}
+
+.hud-btn {
+  min-width: 40px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.hud-btn:active {
+  transform: scale(0.94);
+  background: rgba(201, 168, 106, 0.2);
+}
+
+.hud-health {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 1.1rem;
+}
+
+.heart-icon.lost {
+  opacity: 0.2;
+  filter: grayscale(1);
+}
+
+.hud-inventory {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inv-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(201, 168, 106, 0.12);
+  border: 1px solid var(--border-subtle);
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+}
+
+.inv-qty {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.inv-badge {
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: badgePop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes badgePop {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ==========================================================================
+   Canvas & In-Game Prompts
+   ========================================================================== */
+
+.canvas-container {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  overflow: hidden;
+  background: #0B0B0D;
+}
+
+.game-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Action Prompt (Interactive elements) */
+.interact-prompt {
+  position: absolute;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(14, 14, 20, 0.94);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+  z-index: 15;
+  animation: promptBob 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes promptBob {
+  0% { transform: translateX(-50%) translateY(0); }
+  100% { transform: translateX(-50%) translateY(-6px); }
+}
+
+.prompt-key {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--gold);
+  color: #121008;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+.prompt-text {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* System Notification Banner (Toast) */
+.system-toast {
+  position: absolute;
+  top: calc(68px + var(--safe-top));
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(22, 22, 30, 0.94);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-full);
+  padding: 8px 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+  z-index: 25;
+  animation: toastPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes toastPop {
+  from { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(0.9); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+.toast-sparkle {
+  color: var(--gold);
+  font-size: 1rem;
+}
+
+.toast-message {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Mobile Touch Controls (Thumb-Zone Ergonomics)
+   ========================================================================== */
+
+.touch-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(115px + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  padding-left: 20px;
+  padding-right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.touch-dpad, .touch-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  pointer-events: auto;
+}
+
+.touch-btn {
+  width: 58px;
+  height: 58px;
+  border-radius: var(--radius-full);
+  background: rgba(28, 28, 38, 0.82);
+  border: 2px solid rgba(201, 168, 106, 0.4);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1.3rem;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: none;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  transition: transform 0.08s ease, background 0.08s ease, border-color 0.08s ease;
+}
+
+.touch-btn:active, .touch-btn.active {
+  transform: scale(0.91);
+  background: rgba(201, 168, 106, 0.35);
+  border-color: var(--gold);
+}
+
+.action-btn.primary {
+  width: 66px;
+  height: 66px;
+  background: linear-gradient(135deg, rgba(201, 168, 106, 0.92) 0%, rgba(142, 115, 66, 0.92) 100%);
+  color: #121008;
+  border-color: var(--gold-light);
+  box-shadow: 0 4px 18px var(--gold-glow);
+}
+
+.action-btn.primary:active, .action-btn.primary.active {
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
+}
+
+.action-btn.secondary {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-subtext {
+  font-size: 0.65rem;
+  font-weight: 700;
+  margin-top: -2px;
+}
+
+/* ==========================================================================
+   Modals & Overlays
+   ========================================================================== */
+
+.game-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(7, 7, 10, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.game-modal.active {
+  display: flex;
+  opacity: 1;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 24px 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: center;
+  transform: translateY(10px);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.game-modal.active .modal-card {
+  transform: translateY(0);
+}
+
+/* Common Game Buttons */
+.game-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+}
+
+.game-btn:active {
+  transform: scale(0.97);
+}
+
+.primary-gold {
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
+  color: #121008;
+  box-shadow: 0 4px 16px var(--gold-glow);
+}
+
+.secondary-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  border: 1px solid var(--border-subtle);
+}
+
+.text-btn {
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  min-height: 38px;
+}
+
+.text-btn:hover {
+  color: var(--gold-light);
+}
+
+.glow-btn {
+  animation: btnGlowPulse 2.5s infinite alternate ease-in-out;
+}
+
+@keyframes btnGlowPulse {
+  0% { box-shadow: 0 4px 16px var(--gold-glow); }
+  100% { box-shadow: 0 6px 26px rgba(201, 168, 106, 0.65); }
+}
+
+/* ==========================================================================
+   Opening Boot Modal
+   ========================================================================== */
+
+.boot-card {
+  border-color: rgba(201, 168, 106, 0.35);
+  text-align: right;
+}
+
+.boot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 10px;
+}
+
+.terminal-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.dot.red { background: #E84A64; }
+.dot.yellow { background: #F8D16B; }
+.dot.green { background: #7BE495; }
+
+.boot-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--gold);
+}
+
+.boot-terminal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.term-line {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.mission-dossier-box {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dossier-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(201, 168, 106, 0.15);
+  padding-bottom: 8px;
+}
+
+.dossier-main-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.dossier-tag {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.dossier-meta-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.meta-label {
+  color: var(--text-muted);
+}
+
+.meta-val {
+  font-weight: 700;
+}
+
+.highlight-esraa {
+  color: var(--esraa-pink);
+}
+
+.esraa-opening-speech {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(232, 74, 100, 0.1);
+  border: 1px solid rgba(232, 74, 100, 0.3);
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+}
+
+.esraa-avatar-bubble {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #F7CAC9 0%, #B83B5E 100%);
+  border: 2px solid var(--gold);
+  flex-shrink: 0;
+}
+
+.speech-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.95rem;
+}
+
+.sub-speech {
+  font-weight: 700;
+  color: #FFA6B5;
+}
+
+/* Modal Staggered Animations */
+.fade-in-1 { animation: fadeIn 0.4s ease forwards; }
+.fade-in-2 { animation: fadeIn 0.6s ease forwards; }
+.fade-in-3 { animation: fadeIn 0.8s ease forwards; }
+.fade-in-4 { animation: fadeIn 1.0s ease forwards; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   Level Select Modal (5 Levels)
+   ========================================================================== */
+
+.modal-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.modal-subtitle {
+  font-size: 0.95rem;
+  color: var(--gold);
+  margin-top: -12px;
+}
+
+.levels-scroll-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 52vh;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.level-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: rgba(25, 25, 34, 0.85);
+  color: var(--text);
+  font-family: inherit;
+  text-align: right;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.level-card.unlocked:hover {
+  border-color: var(--gold);
+  background: rgba(35, 35, 48, 0.95);
+}
+
+.level-card.locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+.lvl-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(201, 168, 106, 0.2);
+  color: var(--gold-light);
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lvl-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.lvl-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.lvl-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.lvl-status {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+/* ==========================================================================
+   Celebration & Game Over
+   ========================================================================== */
+
+.celebration-card {
+  border-color: var(--gold);
+}
+
+.complete-star {
+  font-size: 2.4rem;
+  color: var(--gold);
+  text-shadow: 0 0 16px var(--gold-glow);
+}
+
+.complete-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.complete-esraa-text {
+  font-size: 1rem;
+  color: var(--esraa-pink);
+  font-weight: 600;
+}
+
+.unlock-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(123, 228, 149, 0.12);
+  border: 1px solid rgba(123, 228, 149, 0.3);
+  color: #7BE495;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.game-over-icon {
+  font-size: 2.4rem;
+}
+
+.game-over-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #FFA6B5;
+}
+
+.game-over-esraa {
+  font-size: 1rem;
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Finale Modal & Next Mission (Part II: الزواج)
+   ========================================================================== */
+
+.finale-card {
+  max-height: 90vh;
+  overflow-y: auto;
+  border-color: var(--gold);
+}
+
+.finale-scrollable {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.complete-badge-aura {
+  font-size: 4rem;
+  line-height: 1;
+  color: var(--gold);
+  text-shadow: 0 0 25px var(--gold-glow);
+}
+
+.finale-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.finale-speech-box {
+  background: rgba(232, 74, 100, 0.12);
+  border: 1px solid rgba(232, 74, 100, 0.3);
+  padding: 14px;
+  border-radius: var(--radius-md);
+  text-align: right;
+}
+
+.speech-quote {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--gold-light);
+}
+
+.speech-quote-text {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.glitch-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(226, 147, 77, 0.15);
+  border: 1px solid rgba(226, 147, 77, 0.35);
+  padding: 10px;
+  border-radius: var(--radius-md);
+}
+
+.alert-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #E2934D;
+  box-shadow: 0 0 8px #E2934D;
+  animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.3); }
+}
+
+.glitch-text {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #F8D16B;
+}
+
+.next-mission-card {
+  background: rgba(14, 14, 20, 0.85);
+  border: 1px solid rgba(226, 147, 77, 0.35);
+  padding: 16px;
+  border-radius: var(--radius-md);
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dossier-header-mini {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 6px;
+}
+
+.stamp-warning {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #E2934D;
+}
+
+.code-faint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.dossier-grid-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.dossier-row-mini {
+  display: flex;
+  justify-content: space-between;
+}
+
+.status-locked {
+  color: #E2934D;
+  font-weight: 700;
+}
+
+.esraa-next-quote {
+  font-size: 0.95rem;
+  color: var(--esraa-pink);
+  font-weight: 600;
+  text-align: center;
+  margin-top: 6px;
+}
+
+.wedding-ring-emblem {
+  font-size: 2.8rem;
+  text-align: center;
+  animation: ringFloat 2.2s infinite alternate ease-in-out;
+}
+
+@keyframes ringFloat {
+  0% { transform: translateY(0) rotate(-4deg); }
+  100% { transform: translateY(-8px) rotate(4deg); }
+}
+
+.wedding-chapter-name {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--gold-light);
+  text-align: center;
+}
+
+.cliffhanger-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.esraa-cliffhanger-line {
+  font-size: 1.05rem;
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+.divider-hairline {
+  width: 50px;
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 8px 0;
+}
+
+.part-end-title {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.part-end-sub {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.part-hint {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.part-two-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--gold-light);
+  margin-top: 8px;
+}
+
+.part-two-date {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.yotba-title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--text);
+  margin-top: 14px;
+}
+
+.infinity-finale-glow {
+  font-size: 3.5rem;
+  color: var(--gold);
+  text-shadow: 0 0 20px var(--gold-glow);
+  line-height: 1;
+}
+
+.infinity-sub {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Strict requirement: Footer credit ONLY in this final screen, understated, low opacity */
+.final-credit-footer {
+  width: 100%;
+  text-align: center;
+  padding-top: 20px;
+}
+
+.credit-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  opacity: 0.45;
+  letter-spacing: 0.04em;
+  font-weight: 400;
+}
+
+/* Easter Egg Modal */
+.easter-card {
+  border-color: var(--gold);
+}
+
+.easter-stars {
+  font-size: 1.5rem;
+}
+
+.easter-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--gold-light);
+}
+
+.easter-equation {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--text);
+  margin: 6px 0;
+}
+
+.easter-desc {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.small-btn {
+  max-width: 140px;
+  min-height: 40px;
+  margin: 0 auto;
+  font-size: 0.9rem;
+}
+
+/* ==========================================================================
+   Intro Hook Modal ("Do you love me? ❤️" with Evasive NO Button)
+   ========================================================================== */
+
+.hook-card {
+  border-color: rgba(232, 74, 100, 0.4);
+  box-shadow: 0 16px 45px rgba(232, 74, 100, 0.15), 0 8px 30px rgba(0, 0, 0, 0.8);
+  position: relative;
+  overflow: visible;
+}
+
+.hook-avatar-box {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.hook-couple-art {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.couple-heart {
+  font-size: 2.5rem;
+  animation: heartPulse 1.2s infinite ease-in-out;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+
+@keyframes heartPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.22); filter: drop-shadow(0 0 12px rgba(232, 74, 100, 0.7)); }
+}
+
+.couple-silhouettes {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 8px 22px;
+}
+
+.char-icon {
+  font-size: 1.8rem;
+}
+
+.char-infinity-icon {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--gold-light);
+  text-shadow: 0 0 10px var(--gold-glow);
+}
+
+.hook-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+}
+
+.hook-tag {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--esraa-pink);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hook-title {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.hook-taunt {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gold-light);
+  min-height: 28px;
+  transition: all 0.2s ease;
+}
+
+.hook-decision-arena {
+  position: relative;
+  width: 100%;
+  height: 140px;
+  margin: 10px 0;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-md);
+  border: 1px dashed rgba(201, 168, 106, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.hook-btn {
+  width: auto;
+  min-width: 120px;
+  font-size: 1.1rem;
+  border-radius: var(--radius-full);
+  z-index: 5;
+}
+
+.btn-yes {
+  background: linear-gradient(135deg, #FF6B8B 0%, #D92B45 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 20px rgba(217, 43, 69, 0.5);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.btn-yes:hover, .btn-yes:active {
+  transform: scale(1.12);
+  box-shadow: 0 6px 28px rgba(217, 43, 69, 0.7);
+}
+
+.btn-no {
+  background: rgba(35, 35, 48, 0.95);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  position: absolute;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), left 0.18s ease, top 0.18s ease;
+  touch-action: none;
+}
+
+.hook-granted-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(123, 228, 149, 0.15);
+  border: 1px solid rgba(123, 228, 149, 0.4);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  color: #7BE495;
+  font-weight: 800;
+  font-size: 1.1rem;
+  animation: badgePop 0.4s ease forwards;
+}
+
+/* ==========================================================================
+   Fake Ending & Glitch Screen (Between Level 3 & 4)
+   ========================================================================== */
+
+.fake-card {
+  border-color: rgba(201, 168, 106, 0.4);
+}
+
+.fake-heart {
+  font-size: 3.5rem;
+  animation: heartPulse 1s infinite ease-in-out;
+}
+
+.fake-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 8px;
+}
+
+.fake-sub {
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.glitch-warning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.glitch-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #E2934D;
+  letter-spacing: 0.05em;
+}
+
+.glitch-title {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #FFA6B5;
+  text-shadow: 2px 0 0 rgba(232, 74, 100, 0.5), -2px 0 0 rgba(123, 228, 149, 0.5);
+}
+
+.glitch-desc {
+  font-size: 1.05rem;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+/* Screen glitch effect */
+.glitch-shake {
+  animation: glitchShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes glitchShake {
+  10%, 90% { transform: translate3d(-3px, 0, 0); }
+  20%, 80% { transform: translate3d(4px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+  40%, 60% { transform: translate3d(6px, 0, 0); }
+}
+
+/* ==========================================================================
+   Handoff Screens (Ahmed <-> Esraa)
+   ========================================================================== */
+
+.handoff-card {
+  border-color: rgba(255, 166, 181, 0.4);
+}
+
+.handoff-icon-wrap {
+  position: relative;
+  display: inline-block;
+  margin: 0 auto;
+}
+
+.handoff-phone-icon {
+  font-size: 3.5rem;
+  display: block;
+}
+
+.handoff-heart-float, .handoff-check-float {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  font-size: 1.8rem;
+  animation: ringFloat 1.8s infinite alternate ease-in-out;
+}
+
+.handoff-lead {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.handoff-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--esraa-pink);
+}
+
+.handoff-instruction {
+  font-size: 1.05rem;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+/* ==========================================================================
+   Esraa's Playable Mini-game (Infinity Circuit)
+   ========================================================================== */
+
+.minigame-card {
+  border-color: var(--gold);
+}
+
+.minigame-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 8px;
+}
+
+.minigame-tag {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--esraa-pink);
+}
+
+.minigame-timer-box {
+  background: rgba(201, 168, 106, 0.15);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-full);
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gold-light);
+}
+
+.minigame-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.minigame-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.infinity-circuit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 12px 6px;
+}
+
+.circuit-node {
+  background: rgba(25, 25, 34, 0.85);
+  border: 2px solid rgba(201, 168, 106, 0.25);
+  border-radius: var(--radius-md);
+  padding: 18px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.circuit-node:active {
+  transform: scale(0.93);
+}
+
+.circuit-node .node-icon {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--text-muted);
+  transition: all 0.25s ease;
+}
+
+.circuit-node .node-state {
+  font-size: 1.1rem;
+}
+
+.circuit-node.solved {
+  background: rgba(201, 168, 106, 0.22);
+  border-color: var(--gold);
+  box-shadow: 0 0 18px var(--gold-glow);
+  transform: scale(1.02);
+}
+
+.circuit-node.solved .node-icon {
+  color: var(--gold-light);
+  text-shadow: 0 0 14px var(--gold-glow);
+}
+
+.minigame-feedback {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #7BE495;
+  min-height: 24px;
+}
