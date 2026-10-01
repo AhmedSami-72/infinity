@@ -533,6 +533,11 @@ class Player {
     this.maxJumps = 2;
   }
 
+  applyGravity(dt) {
+    this.vy += this.gravity * dt;
+    if (this.vy > 900) this.vy = 900;
+  }
+
   jump() {
     if (this.grounded || this.jumpCount < this.maxJumps) {
       if (this.grounded) {
@@ -562,33 +567,74 @@ class Player {
     }
   }
 
+  handleCollision(platforms) {
+    if (!platforms || !Array.isArray(platforms)) return;
+
+    // Check vertical collisions (ground & ceiling)
+    for (const p of platforms) {
+      if (this.collidesWith(p)) {
+        if (this.vy > 0) {
+          // Landing on top of a platform: stop falling
+          this.y = p.y - this.height;
+          this.vy = 0;
+          this.grounded = true;
+          this.jumpCount = 0;
+        } else if (this.vy < 0) {
+          // Hitting platform from below: stop upward velocity
+          this.y = p.y + p.h;
+          this.vy = 0;
+        }
+      }
+    }
+
+    // Check horizontal collisions (walls)
+    for (const p of platforms) {
+      if (this.collidesWith(p)) {
+        if (this.vx > 0) {
+          // Moving right and hitting platform wall: stop horizontal movement
+          this.x = p.x - this.width;
+          this.vx = 0;
+        } else if (this.vx < 0) {
+          // Moving left and hitting platform wall: stop horizontal movement
+          this.x = p.x + p.w;
+          this.vx = 0;
+        }
+      }
+    }
+  }
+
   update(dt, input, platforms) {
     if (this.invulnerableTimer > 0) {
       this.invulnerableTimer -= dt;
     }
 
+    // Horizontal velocity from input
     this.vx = 0;
-    if (input.keys.left) {
-      this.vx = -this.speed;
-      this.facing = -1;
-    }
-    if (input.keys.right) {
-      this.vx = this.speed;
-      this.facing = 1;
+    if (input && input.keys) {
+      if (input.keys.left) {
+        this.vx = -this.speed;
+        this.facing = -1;
+      }
+      if (input.keys.right) {
+        this.vx = this.speed;
+        this.facing = 1;
+      }
     }
 
-    // Gravity
-    this.vy += this.gravity * dt;
-    if (this.vy > 900) this.vy = 900;
+    // Apply gravity
+    this.applyGravity(dt);
 
-    // Move X
+    // Update X position and stop when colliding with platforms
     this.x += this.vx * dt;
     this.checkHorizontalCollisions(platforms);
 
-    // Move Y
+    // Update Y position and stop when colliding with platforms
     this.y += this.vy * dt;
     this.grounded = false;
     this.checkVerticalCollisions(platforms);
+
+    // Comprehensive collision verification
+    this.handleCollision(platforms);
 
     // Animation state
     if (!this.grounded) {
@@ -603,18 +649,22 @@ class Player {
   }
 
   checkHorizontalCollisions(platforms) {
+    if (!platforms) return;
     for (const p of platforms) {
       if (this.collidesWith(p)) {
         if (this.vx > 0) {
           this.x = p.x - this.width;
+          this.vx = 0;
         } else if (this.vx < 0) {
           this.x = p.x + p.w;
+          this.vx = 0;
         }
       }
     }
   }
 
   checkVerticalCollisions(platforms) {
+    if (!platforms) return;
     for (const p of platforms) {
       if (this.collidesWith(p)) {
         if (this.vy > 0) {
@@ -746,6 +796,10 @@ class Player {
   }
 }
 
+if (typeof window !== 'undefined') {
+  window.Player = Player;
+}
+
 /* ==========================================================================
    8. In-Game Animated NPC: Esraa
    ========================================================================== */
@@ -835,10 +889,10 @@ class EsraaNPC {
 }
 
 /* ==========================================================================
-   9. The 5 Detailed Levels Configuration
+   9. The Levels Configuration (المراحل وبيانات المنصات وعقبات التشتيت ورموز ∞)
    ========================================================================== */
 
-const levelsConfig = {
+const levels = {
   // Level 1: "لسه البداية" (Tutorial disguised in real platforming)
   1: {
     name: "المرحلة الأولى: لسه البداية",
@@ -856,6 +910,14 @@ const levelsConfig = {
       { x: 1840, y: 460, w: 160, h: 24, type: 'platform' },
       { x: 2060, y: 540, w: 340, h: 160, type: 'ground' }
     ],
+    // عقبات التشتيت (Distraction Obstacles that tempt or distract Ahmed from reaching Esraa)
+    distractions: [
+      { x: 380, y: 505, w: 34, h: 34, icon: '☕', name: 'شاي بلبن', quote: 'سيب الشاي دلوقتي وركز يا أحمد! 😂', active: true },
+      { x: 800, y: 365, w: 34, h: 34, icon: '⚽', name: 'ماتش الأهلي', quote: 'ماتش إيه اللي شاغل بالك دلوقتي! 😂', active: true },
+      { x: 1210, y: 425, w: 34, h: 34, icon: '💬', name: 'إشعار واتساب', quote: 'سيب الموبايل وركز في المهمة! 😉', active: true },
+      { x: 1720, y: 335, w: 34, h: 34, icon: '🎮', name: 'بلايستيشن', quote: 'اللعب الحقيقي هنا معايا! 😂', active: true }
+    ],
+    // توزيع عناصر الـ ∞ الخمسة
     collectibles: [
       { x: 280, y: 490, collected: false, hint: 'على الطريق' },
       { x: 600, y: 420, collected: false, hint: 'فوق منصة' },
@@ -1009,6 +1071,13 @@ const levelsConfig = {
     ]
   }
 };
+
+// Aliases for compatibility and global access
+const levelsConfig = levels;
+if (typeof window !== 'undefined') {
+  window.levels = levels;
+  window.levelsConfig = levelsConfig;
+}
 
 /* ==========================================================================
    10. UI Manager (HUD, Inventory, Modals & Toast)
@@ -1692,6 +1761,29 @@ class Game {
       }
     }
 
+    // Distraction Obstacles (عقبات التشتيت)
+    if (this.currentLevelData.distractions) {
+      for (const d of this.currentLevelData.distractions) {
+        if (!d.active) continue;
+        const dist = Math.hypot(
+          (this.player.x + this.player.width / 2) - (d.x + d.w / 2),
+          (this.player.y + this.player.height / 2) - (d.y + d.h / 2)
+        );
+        if (dist < 34) {
+          if (!d.hitCooldown || Date.now() - d.hitCooldown > 2200) {
+            d.hitCooldown = Date.now();
+            audioManager.playSfx('hit');
+            this.particles.emit(d.x + d.w / 2, d.y + d.h / 2, '#FFA6B5', 12, 90, 0.45);
+            this.speech.add('إسراء', d.quote, this.player, 3.2);
+            UIManager.showSystemToast(`عقبة تشتيت: ${d.name}! ⚠️`);
+            // Gentle playful bump back
+            this.player.vx = (this.player.x < d.x ? -1 : 1) * 160;
+            this.player.vy = -180;
+          }
+        }
+      }
+    }
+
     // Level 4: Active In-World YES/NO Nodes & Evasion
     if (gameState.currentLevel === 4) {
       const lvl = this.currentLevelData;
@@ -1945,6 +2037,49 @@ class Game {
 
           ctx.restore();
         }
+      }
+    }
+
+    // Distraction Obstacles (عقبات التشتيت)
+    if (this.currentLevelData.distractions) {
+      for (const d of this.currentLevelData.distractions) {
+        if (!d.active) continue;
+        const sx = Math.round(d.x - this.camera.x);
+        const sy = Math.round(d.y - this.camera.y);
+
+        if (sx + d.w < 0 || sx > viewW || sy + d.h + 24 < 0 || sy > viewH) continue;
+
+        const bob = Math.sin(Date.now() / 280 + d.x) * 3;
+
+        ctx.save();
+        ctx.translate(sx + d.w / 2, sy + d.h / 2 + bob);
+
+        // Warning glow ring
+        ctx.fillStyle = 'rgba(232, 74, 100, 0.16)';
+        ctx.beginPath();
+        ctx.arc(0, 0, 20, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(255, 166, 181, 0.55)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.arc(0, 0, 18, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Icon
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(d.icon, 0, -2);
+
+        // Name tag below
+        ctx.font = 'bold 9px sans-serif';
+        ctx.fillStyle = '#FFA6B5';
+        ctx.fillText(d.name, 0, 22);
+
+        ctx.restore();
       }
     }
 
